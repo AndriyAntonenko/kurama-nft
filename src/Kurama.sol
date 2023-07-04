@@ -165,8 +165,8 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
         ids[photosAdded] = tokenId;
         photos[photosAdded] = s_tokenIdToPhoto[tokenId];
         prices[photosAdded] = s_prices[tokenId];
+        photosAdded++;
       }
-      photosAdded++;
     }
 
     return (ids, photos, prices);

@@ -4,11 +4,12 @@ pragma solidity ^0.8.19;
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { console } from "forge-std/console.sol";
 import { Test } from "forge-std/Test.sol";
-import { DeployKurama } from "../script/DeployKurama.sol";
-import { Kurama } from "../src/Kurama.sol";
-import { Errors } from "../src/libraries/Errors.sol";
-import { DataTypes } from "../src/libraries/DataTypes.sol";
-import { Events } from "../src/libraries/Events.sol";
+import { FailedTreasuryMock } from "../mocks/FailedTreasuryMock.sol";
+import { DeployKurama } from "../../script/DeployKurama.sol";
+import { Kurama } from "../../src/Kurama.sol";
+import { Errors } from "../../src/libraries/Errors.sol";
+import { DataTypes } from "../../src/libraries/DataTypes.sol";
+import { Events } from "../../src/libraries/Events.sol";
 
 contract KuramaTest is Test {
   using console for *;
@@ -33,6 +34,10 @@ contract KuramaTest is Test {
     deployer = new DeployKurama();
     kurama = deployer.run(OWNER, TREASURY);
     deal(USER, USER_BALANCE);
+  }
+
+  function testOwnerIsCorrect() public view {
+    assert(kurama.owner() == OWNER);
   }
 
   function testNameIsCorrect() public view {
@@ -98,6 +103,14 @@ contract KuramaTest is Test {
     kurama.changePrice(tokenId, 0.2 ether);
     vm.stopPrank();
     assert(kurama.priceOf(tokenId) == 0.2 ether);
+  }
+
+  function testChangePriceRevertIfNotOwner() public {
+    uint256 tokenId = mint();
+    vm.startPrank(USER);
+    vm.expectRevert();
+    kurama.changePrice(tokenId, 0.2 ether);
+    vm.stopPrank();
   }
 
   function testGetTreasury() public view {
@@ -174,6 +187,20 @@ contract KuramaTest is Test {
     kurama.purchase{value: INIT_PRICE}(tokenId);
     vm.stopPrank();
     assert(payable(TREASURY).balance == INIT_PRICE);
+  }
+
+  function testRevertOnFailedTransferToTreasury() public {
+    FailedTreasuryMock failedTreasury = new FailedTreasuryMock();
+    Kurama kuramaWithFailedTreasury = new Kurama(OWNER, address(failedTreasury));
+
+    vm.startPrank(OWNER);
+    uint256 tokenId = kuramaWithFailedTreasury.mint(SNOW_PHOTO, INIT_PRICE);
+    vm.stopPrank();
+
+    vm.startPrank(USER);
+    vm.expectRevert(Errors.Kurama__CannotTransferToTreasury.selector);
+    kuramaWithFailedTreasury.purchase{value: INIT_PRICE}(tokenId);
+    vm.stopPrank();
   }
 
   /*//////////////////////////////////////////////////////////////
