@@ -7,15 +7,17 @@ import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { ERC721Pausable } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { Errors } from "./libraries/Errors.sol";
+import { DataTypes } from "./libraries/DataTypes.sol";
+import { Events } from "./libraries/Events.sol";
 
 contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
   /*//////////////////////////////////////////////////////////////
                                  STATE
   //////////////////////////////////////////////////////////////*/
-
   address private treasury; // The address that will receive the money from the sales
   uint256 private s_tokenCounter; // The counter of the tokens minted. It also used to generate the ids
-  mapping(uint256 => KuramaPhoto) private s_tokenIdToPhoto; // The mapping from the token id to the KuramaPhoto struct
+  // The mapping from the token id to the KuramaPhoto struct
+  mapping(uint256 => DataTypes.KuramaPhoto) private s_tokenIdToPhoto;
   mapping(uint256 => uint256) s_prices; // The mapping from the token id to the price
 
   /*//////////////////////////////////////////////////////////////
@@ -29,22 +31,6 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
       revert Errors.Kurama__SaleOnPause();
     }
     _;
-  }
-
-  /*//////////////////////////////////////////////////////////////
-                                 EVENTS
-  //////////////////////////////////////////////////////////////*/
-  event KuramaMinted(uint256 tokenId, KuramaPhoto photo, uint256 price);
-  event KuramaPurchased(uint256 tokenId, address buyer, uint256 price);
-  event KuramaPriceChanged(uint256 tokenId, uint256 newPrice);
-
-  /*//////////////////////////////////////////////////////////////
-                                 TYPES
-  //////////////////////////////////////////////////////////////*/
-  struct KuramaPhoto {
-    string name;
-    string description;
-    string image;
   }
 
   constructor(address _owner, address _treasury) ERC721("Kurama", "KUR") {
@@ -68,13 +54,13 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
    * @param _photo The photo to mint
    * @param _initialPrice The initial price of the photo in wei
    */
-  function mint(KuramaPhoto memory _photo, uint256 _initialPrice) public onlyOwner returns (uint256) {
+  function mint(DataTypes.KuramaPhoto memory _photo, uint256 _initialPrice) public onlyOwner returns (uint256) {
     uint256 newTokenId = s_tokenCounter;
     s_tokenIdToPhoto[newTokenId] = _photo;
     s_prices[newTokenId] = _initialPrice;
     _safeMint(address(this), newTokenId);
     s_tokenCounter = s_tokenCounter + 1;
-    emit KuramaMinted(newTokenId, _photo, _initialPrice);
+    emit Events.KuramaMinted(newTokenId, _photo, _initialPrice);
     return newTokenId;
   }
 
@@ -92,7 +78,7 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
    */
   function changePrice(uint256 _tokenId, uint256 _newPrice) public onlyOwner {
     s_prices[_tokenId] = _newPrice;
-    emit KuramaPriceChanged(_tokenId, _newPrice);
+    emit Events.KuramaPriceChanged(_tokenId, _newPrice);
   }
 
   /**
@@ -114,7 +100,7 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
     if (!success) {
       revert Errors.Kurama__CannotTransferToTreasury();
     }
-    emit KuramaPurchased(_tokenId, msg.sender, msg.value);
+    emit Events.KuramaPurchased(_tokenId, msg.sender, msg.value);
   }
 
   /*//////////////////////////////////////////////////////////////
@@ -142,7 +128,7 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
    * @param _tokenId The id of the token to get the photo
    */
   function tokenURI(uint256 _tokenId) public view override returns (string memory) {
-    KuramaPhoto memory photo = s_tokenIdToPhoto[_tokenId];
+    DataTypes.KuramaPhoto memory photo = s_tokenIdToPhoto[_tokenId];
     string memory json = Base64.encode(
       bytes(
         string(
@@ -167,10 +153,10 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
     return balanceOf(address(this));
   }
 
-  function getPhotosToSale() public view returns (uint256[] memory, KuramaPhoto[] memory, uint256[] memory) {
+  function getPhotosToSale() public view returns (uint256[] memory, DataTypes.KuramaPhoto[] memory, uint256[] memory) {
     uint256 tokensAmount = getTokensAmountToPurchase();
     uint256[] memory ids = new uint256[](tokensAmount);
-    KuramaPhoto[] memory photos = new KuramaPhoto[](tokensAmount);
+    DataTypes.KuramaPhoto[] memory photos = new DataTypes.KuramaPhoto[](tokensAmount);
     uint256[] memory prices = new uint256[](tokensAmount);
 
     uint256 photosAdded = 0;

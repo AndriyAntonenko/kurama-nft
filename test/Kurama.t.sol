@@ -7,6 +7,8 @@ import { Test } from "forge-std/Test.sol";
 import { DeployKurama } from "../script/DeployKurama.sol";
 import { Kurama } from "../src/Kurama.sol";
 import { Errors } from "../src/libraries/Errors.sol";
+import { DataTypes } from "../src/libraries/DataTypes.sol";
+import { Events } from "../src/libraries/Events.sol";
 
 contract KuramaTest is Test {
   using console for *;
@@ -17,7 +19,7 @@ contract KuramaTest is Test {
   address public USER = makeAddr("user");
   address public TREASURY = makeAddr("treasury");
 
-  Kurama.KuramaPhoto public SNOW_PHOTO = Kurama.KuramaPhoto({
+  DataTypes.KuramaPhoto public SNOW_PHOTO = DataTypes.KuramaPhoto({
     name: "First snow",
     description: "This photo was made when Kurama saw the snow in the first time",
     image: SNOW_IPFS_URL
@@ -54,7 +56,7 @@ contract KuramaTest is Test {
 
   function testGetPhotosToSale() public {
     uint256 tokenId = mint();
-    (uint256[] memory ids, Kurama.KuramaPhoto[] memory photos, uint256[] memory prices) = kurama.getPhotosToSale();
+    (uint256[] memory ids, DataTypes.KuramaPhoto[] memory photos, uint256[] memory prices) = kurama.getPhotosToSale();
     assert(ids.length == 1);
     assert(ids[0] == tokenId);
     assert(photos.length == 1);
@@ -66,7 +68,7 @@ contract KuramaTest is Test {
   }
 
   function testGetEmptyPhotosToSale() public view {
-    (uint256[] memory ids, Kurama.KuramaPhoto[] memory photos, uint256[] memory prices) = kurama.getPhotosToSale();
+    (uint256[] memory ids, DataTypes.KuramaPhoto[] memory photos, uint256[] memory prices) = kurama.getPhotosToSale();
     assert(ids.length == 0);
     assert(photos.length == 0);
     assert(prices.length == 0);
