@@ -14,7 +14,7 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
   /*//////////////////////////////////////////////////////////////
                                  STATE
   //////////////////////////////////////////////////////////////*/
-  address private treasury; // The address that will receive the money from the sales
+  address private s_treasury; // The address that will receive the money from the sales
   uint256 private s_tokenCounter; // The counter of the tokens minted. It also used to generate the ids
   // The mapping from the token id to the KuramaPhoto struct
   mapping(uint256 => DataTypes.KuramaPhoto) private s_tokenIdToPhoto;
@@ -34,11 +34,12 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
   }
 
   constructor(address _owner, address _treasury) ERC721("Kurama", "KUR") {
-    s_tokenCounter = 0;
-    treasury = _treasury;
-    if (treasury == address(0) && _owner == address(0)) {
+    if (_treasury == address(0) && _owner == address(0)) {
       revert Errors.Kurama__ZeroAddress();
     }
+
+    s_tokenCounter = 0;
+    s_treasury = _treasury;
 
     if (_owner != msg.sender) {
       transferOwnership(_owner);
@@ -96,11 +97,14 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
 
     s_prices[_tokenId] = 0;
     _transfer(owner, msg.sender, _tokenId);
-    (bool success,) = payable(treasury).call{value: msg.value}("");
+    emit Events.KuramaPurchased(_tokenId, msg.sender, msg.value);
+  }
+
+  function withdraw() public onlyOwner {
+    (bool success,) = payable(s_treasury).call{value: address(this).balance}("");
     if (!success) {
       revert Errors.Kurama__CannotTransferToTreasury();
     }
-    emit Events.KuramaPurchased(_tokenId, msg.sender, msg.value);
   }
 
   /*//////////////////////////////////////////////////////////////
@@ -120,7 +124,7 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
    * buying
    */
   function getTreasury() public view returns (address) {
-    return treasury;
+    return s_treasury;
   }
 
   /**

@@ -186,6 +186,11 @@ contract KuramaTest is Test {
     vm.startPrank(USER);
     kurama.purchase{value: INIT_PRICE}(tokenId);
     vm.stopPrank();
+
+    vm.startPrank(OWNER);
+    kurama.withdraw();
+    vm.stopPrank();
+
     assert(payable(TREASURY).balance == INIT_PRICE);
   }
 
@@ -198,8 +203,12 @@ contract KuramaTest is Test {
     vm.stopPrank();
 
     vm.startPrank(USER);
-    vm.expectRevert(Errors.Kurama__CannotTransferToTreasury.selector);
     kuramaWithFailedTreasury.purchase{value: INIT_PRICE}(tokenId);
+    vm.stopPrank();
+
+    vm.startPrank(OWNER);
+    vm.expectRevert(Errors.Kurama__CannotTransferToTreasury.selector);
+    kuramaWithFailedTreasury.withdraw();
     vm.stopPrank();
   }
 
