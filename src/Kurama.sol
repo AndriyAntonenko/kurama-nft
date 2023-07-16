@@ -61,7 +61,7 @@ contract Kurama is Ownable, ERC721Pausable, IERC721Receiver {
     s_prices[newTokenId] = _initialPrice;
     _safeMint(address(this), newTokenId);
     s_tokenCounter = s_tokenCounter + 1;
-    emit Events.KuramaMinted(newTokenId, _photo, _initialPrice);
+    emit Events.KuramaReadyToPurchase(newTokenId, _photo, _initialPrice);
     return newTokenId;
   }
 
